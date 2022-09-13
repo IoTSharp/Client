@@ -59,9 +59,33 @@
         <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
         <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
     </ItemGroup>
+	
+    <ItemGroup>
+      <None Remove="Resources\Fonts\Segoe-Ui-Bold.ttf" />
+      <None Remove="Resources\Fonts\Segoe-Ui-Regular.ttf" />
+      <None Remove="Resources\Fonts\Segoe-Ui-Semibold.ttf" />
+      <None Remove="Resources\Fonts\Segoe-Ui-Semilight.ttf" />
+    </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\IoTSharp.Shared\IoTSharp.Shared.csproj" />
+    </ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.0.0" /> 
+		<PackageReference Include="Refractored.MvvmHelpers" Version="1.6.2" />
+	</ItemGroup>
+	
+    <ItemGroup>
+      <Folder Include="Resources\Styles\" />
+      <Folder Include="Converters\" />
+      <Folder Include="Views\" />
+    </ItemGroup>
+	
+    <ItemGroup>
+      <MauiXaml Update="Pages\HomePage.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </MauiXaml>
     </ItemGroup>
 
 </Project>

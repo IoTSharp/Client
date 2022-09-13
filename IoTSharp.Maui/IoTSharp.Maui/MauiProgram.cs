@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components.WebView.Maui;
 using IoTSharp.Shared.Data;
+using IoTSharp.Maui.Services;
 
 namespace IoTSharp.Maui;
 
@@ -10,19 +11,22 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
-			.ConfigureFonts(fonts =>
+            .ConfigureEssentials()
+            .ConfigurePages()
+            .ConfigureViewModels()
+            .ConfigureServices()
+            .ConfigureFonts(fonts =>
 			{
-				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-			});
-
-		builder.Services.AddMauiBlazorWebView();
+                fonts.AddFont("Segoe-Ui-Bold.ttf", "SegoeUiBold");
+                fonts.AddFont("Segoe-Ui-Regular.ttf", "SegoeUiRegular");
+                fonts.AddFont("Segoe-Ui-Semibold.ttf", "SegoeUiSemibold");
+                fonts.AddFont("Segoe-Ui-Semilight.ttf", "SegoeUiSemilight");
+            });
+        builder.Services.AddMauiBlazorWebView();
         builder.Services.AddMasaBlazor();
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
-		#endif
-		
-		builder.Services.AddSingleton<WeatherForecastService>();
-
-		return builder.Build();
+#endif
+        return builder.Build();
 	}
 }

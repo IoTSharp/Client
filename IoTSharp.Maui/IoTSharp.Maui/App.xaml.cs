@@ -1,4 +1,6 @@
-﻿namespace IoTSharp.Maui;
+﻿using IoTSharp.Maui.Helpers;
+
+namespace IoTSharp.Maui;
 
 public partial class App : Application
 {
@@ -6,6 +8,16 @@ public partial class App : Application
 	{
 		InitializeComponent();
 
-		MainPage = new MainPage();
-	}
+        TheTheme.SetTheme();
+
+        if (AppConfig.Desktop)
+            MainPage = new DesktopShell();
+        else
+            MainPage = new MobileShell();
+    }
+
+    protected override Window CreateWindow(IActivationState activationState)
+    {
+        return new MauiWindow(MainPage);
+    }
 }
