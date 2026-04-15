@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace IoTSharp.Client.Models;
 
 public sealed record CaptchaSession(string ClientId, string BackgroundBase64, string PieceBase64, double OffsetY);
@@ -51,6 +53,12 @@ public sealed record DeviceDetail(
 public sealed record DataValueItem(string KeyName, string DataType, string Value, DateTime? TimestampUtc)
 {
     public string TimestampText => TimestampUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? "-";
+
+    public bool TryGetNumericValue(out double value)
+    {
+        return double.TryParse(Value, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out value)
+               || double.TryParse(Value, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.CurrentCulture, out value);
+    }
 }
 
 public sealed record TelemetryQuery(string Keys, DateTime BeginUtc, DateTime EndUtc, TimeSpan Every, string Aggregate);

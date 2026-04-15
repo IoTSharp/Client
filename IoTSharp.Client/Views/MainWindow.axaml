@@ -141,6 +141,9 @@
               <StackPanel Grid.Row="1" Spacing="10">
                 <TextBox Text="{Binding DeviceSearchText, Mode=TwoWay}" Watermark="设备名称或 GUID" />
                 <CheckBox IsChecked="{Binding OnlyActiveDevices, Mode=TwoWay}" Content="仅显示在线设备" />
+                <Border Background="#F8FAFC" CornerRadius="10" Padding="10">
+                  <TextBlock Text="{Binding DeviceInventorySummary}" Foreground="#475569" TextWrapping="Wrap" />
+                </Border>
                 <atom:Button Content="刷新设备列表" Command="{Binding LoadDevicesCommand}" />
               </StackPanel>
 
@@ -223,14 +226,26 @@
 
             <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="18">
               <Border Grid.Column="0" Padding="18" CornerRadius="18" Background="White" BorderBrush="#E2E8F0" BorderThickness="1">
-                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
+                <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
                   <TextBlock Text="最新遥测" FontSize="20" FontWeight="Bold" />
                   <Grid Grid.Row="1" ColumnDefinitions="2*,*,2*">
                     <TextBlock Text="键" FontWeight="SemiBold" Foreground="#64748B" />
                     <TextBlock Grid.Column="1" Text="类型" FontWeight="SemiBold" Foreground="#64748B" />
                     <TextBlock Grid.Column="2" Text="值 / 时间" FontWeight="SemiBold" Foreground="#64748B" />
                   </Grid>
-                  <ScrollViewer Grid.Row="2">
+                  <Border Grid.Row="2" Background="#F8FAFC" CornerRadius="12" Padding="12">
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="数值型遥测快照" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding LatestTelemetryInsights}" Foreground="#475569" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding LatestTelemetryKeySummary}" Foreground="#94A3B8" FontSize="12" TextWrapping="Wrap" />
+                      <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="8">
+                        <Canvas Width="{Binding TelemetryChartWidth}" Height="{Binding TelemetryChartHeight}" ClipToBounds="True">
+                          <Polyline Points="{Binding LatestTelemetryChartPoints}" Stroke="#0EA5E9" StrokeThickness="2" />
+                        </Canvas>
+                      </Border>
+                    </StackPanel>
+                  </Border>
+                  <ScrollViewer Grid.Row="3">
                     <ItemsControl ItemsSource="{Binding LatestTelemetry}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="models:DataValueItem">
@@ -280,24 +295,45 @@
                   </Grid>
 
                   <Border Grid.Row="2" Background="#F8FAFC" CornerRadius="12" Padding="10">
-                    <TextBlock Text="{Binding TelemetrySummary}" Foreground="#475569" TextWrapping="Wrap" />
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="{Binding TelemetrySummary}" Foreground="#475569" TextWrapping="Wrap" />
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <atom:Button Content="最近 1 小时" Command="{Binding ApplyTimeRangeCommand}" CommandParameter="1h" />
+                        <atom:Button Content="最近 24 小时" Command="{Binding ApplyTimeRangeCommand}" CommandParameter="24h" />
+                        <atom:Button Content="最近 7 天" Command="{Binding ApplyTimeRangeCommand}" CommandParameter="7d" />
+                      </StackPanel>
+                    </StackPanel>
                   </Border>
 
                   <ScrollViewer Grid.Row="3">
-                    <ItemsControl ItemsSource="{Binding QueryTelemetryResults}">
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="models:DataValueItem">
-                          <Grid ColumnDefinitions="2*,*,2*" Margin="0,0,0,8">
-                            <TextBlock Text="{Binding KeyName}" />
-                            <TextBlock Grid.Column="1" Text="{Binding DataType}" Foreground="#64748B" />
-                            <StackPanel Grid.Column="2">
-                              <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
-                              <TextBlock Text="{Binding TimestampText}" Foreground="#94A3B8" FontSize="12" />
-                            </StackPanel>
-                          </Grid>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <StackPanel Spacing="12">
+                      <Border Background="#F8FAFC" CornerRadius="12" Padding="12">
+                        <StackPanel Spacing="8">
+                          <TextBlock Text="聚合趋势预览" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding QueryTelemetryInsights}" Foreground="#475569" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding QueryTelemetryKeySummary}" Foreground="#94A3B8" FontSize="12" TextWrapping="Wrap" />
+                          <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="8">
+                            <Canvas Width="{Binding TelemetryChartWidth}" Height="{Binding TelemetryChartHeight}" ClipToBounds="True">
+                              <Polyline Points="{Binding QueryTelemetryChartPoints}" Stroke="#2563EB" StrokeThickness="2" />
+                            </Canvas>
+                          </Border>
+                        </StackPanel>
+                      </Border>
+                      <ItemsControl ItemsSource="{Binding QueryTelemetryResults}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="models:DataValueItem">
+                            <Grid ColumnDefinitions="2*,*,2*" Margin="0,0,0,8">
+                              <TextBlock Text="{Binding KeyName}" />
+                              <TextBlock Grid.Column="1" Text="{Binding DataType}" Foreground="#64748B" />
+                              <StackPanel Grid.Column="2">
+                                <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding TimestampText}" Foreground="#94A3B8" FontSize="12" />
+                              </StackPanel>
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
                   </ScrollViewer>
                 </Grid>
               </Border>

@@ -1,5 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
+using Avalonia;
 using Avalonia.Media.Imaging;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using IoTSharp.Client.Models;
@@ -30,6 +33,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public AsyncRelayCommand QueryTelemetryCommand { get; }
 
     public RelayCommand LogoutCommand { get; }
+
+    public RelayCommand<string> ApplyTimeRangeCommand { get; }
 
     [ObservableProperty]
     private string serverUrl = "http://localhost:5000";
@@ -112,6 +117,31 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string telemetrySummary = "选择设备后可查询原始遥测或聚合数据。";
 
+    [ObservableProperty]
+    private string deviceInventorySummary = "登录后加载设备库存。";
+
+    [ObservableProperty]
+    private string latestTelemetryInsights = "选择设备后显示最新遥测快照。";
+
+    [ObservableProperty]
+    private string queryTelemetryInsights = "查询后将在这里显示聚合趋势摘要。";
+
+    [ObservableProperty]
+    private string latestTelemetryKeySummary = "暂无数值型遥测键。";
+
+    [ObservableProperty]
+    private string queryTelemetryKeySummary = "暂无聚合曲线。";
+
+    [ObservableProperty]
+    private Points latestTelemetryChartPoints = new();
+
+    [ObservableProperty]
+    private Points queryTelemetryChartPoints = new();
+
+    public double TelemetryChartWidth => 360;
+
+    public double TelemetryChartHeight => 130;
+
     public MainWindowViewModel() : this(new IoTSharpApiClient(), false)
     {
     }
@@ -129,6 +159,7 @@ public partial class MainWindowViewModel : ViewModelBase
         LoadDevicesCommand = new AsyncRelayCommand(LoadDevicesAsync, CanLoadDevices);
         QueryTelemetryCommand = new AsyncRelayCommand(QueryTelemetryAsync, CanQueryTelemetry);
         LogoutCommand = new RelayCommand(Logout);
+        ApplyTimeRangeCommand = new RelayCommand<string>(ApplyTimeRange);
         if (loadCaptcha)
         {
             _ = RefreshCaptchaAsync();
@@ -187,6 +218,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Attributes.Clear();
             LatestTelemetry.Clear();
             QueryTelemetryResults.Clear();
+            ClearTelemetryVisuals();
             TelemetrySummary = "请选择设备。";
             return;
         }
@@ -257,6 +289,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         var devices = await _apiClient.GetDevicesAsync(_apiClient.CustomerId, DeviceSearchText, OnlyActiveDevices);
         ReplaceCollection(Devices, devices);
+        DeviceInventorySummary = BuildDeviceInventorySummary();
 
         StatusMessage = Devices.Count == 0 ? "未查询到匹配设备。" : $"已加载 {Devices.Count} 台设备。";
 
@@ -293,6 +326,11 @@ public partial class MainWindowViewModel : ViewModelBase
             SelectedDeviceDetail = await detailTask;
             ReplaceCollection(Attributes, await attributeTask);
             ReplaceCollection(LatestTelemetry, await telemetryTask);
+            UpdateLatestTelemetryVisuals();
+            ReplaceCollection(QueryTelemetryResults, Array.Empty<DataValueItem>());
+            QueryTelemetryInsights = "重新选择设备后，请再次执行聚合查询。";
+            QueryTelemetryKeySummary = "暂无聚合曲线。";
+            QueryTelemetryChartPoints = new Points();
 
             if (string.IsNullOrWhiteSpace(TelemetryKeys))
             {
@@ -329,6 +367,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 new TelemetryQuery(TelemetryKeys, beginUtc, endUtc, every, SelectedAggregate));
 
             ReplaceCollection(QueryTelemetryResults, results);
+            UpdateQueryTelemetryVisuals();
             TelemetrySummary = $"查询完成：返回 {QueryTelemetryResults.Count} 条 {SelectedAggregate} 数据。";
         });
     }
@@ -346,6 +385,8 @@ public partial class MainWindowViewModel : ViewModelBase
         ReplaceCollection(QueryTelemetryResults, Array.Empty<DataValueItem>());
         SelectedDevice = null;
         SelectedDeviceDetail = null;
+        DeviceInventorySummary = "登录后加载设备库存。";
+        ClearTelemetryVisuals();
         TelemetrySummary = "已退出登录。";
         StatusMessage = "已退出登录，请重新获取验证码。";
         _ = RefreshCaptchaAsync();
@@ -417,6 +458,119 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    private void ApplyTimeRange(string? preset)
+    {
+        var end = DateTime.UtcNow;
+        var begin = preset switch
+        {
+            "1h" => end.AddHours(-1),
+            "24h" => end.AddHours(-24),
+            "7d" => end.AddDays(-7),
+            _ => end.AddHours(-24)
+        };
+
+        TelemetryBeginText = begin.ToString("yyyy-MM-ddTHH:mm:ss");
+        TelemetryEndText = end.ToString("yyyy-MM-ddTHH:mm:ss");
+        TelemetrySummary = preset switch
+        {
+            "1h" => "已切换到最近 1 小时查询窗口。",
+            "7d" => "已切换到最近 7 天查询窗口。",
+            _ => "已切换到最近 24 小时查询窗口。"
+        };
+    }
+
+    private string BuildDeviceInventorySummary()
+    {
+        if (Devices.Count == 0)
+        {
+            return "当前客户暂无可展示设备。";
+        }
+
+        var onlineCount = Devices.Count(device => device.Active);
+        return $"共 {Devices.Count} 台设备，其中 {onlineCount} 台在线，{Devices.Count - onlineCount} 台离线。";
+    }
+
+    private void UpdateLatestTelemetryVisuals()
+    {
+        var visualization = BuildVisualization(
+            LatestTelemetry,
+            item => item.KeyName,
+            "暂无数值型遥测快照。",
+            "最近快照");
+
+        LatestTelemetryChartPoints = visualization.Points;
+        LatestTelemetryInsights = visualization.Insights;
+        LatestTelemetryKeySummary = visualization.Keys;
+    }
+
+    private void UpdateQueryTelemetryVisuals()
+    {
+        var visualization = BuildVisualization(
+            QueryTelemetryResults,
+            item => item.TimestampUtc?.ToLocalTime().ToString("MM-dd HH:mm", CultureInfo.InvariantCulture) ?? item.KeyName,
+            "当前查询未返回可绘制的数值结果。",
+            SelectedAggregate);
+
+        QueryTelemetryChartPoints = visualization.Points;
+        QueryTelemetryInsights = visualization.Insights;
+        QueryTelemetryKeySummary = visualization.Keys;
+    }
+
+    private void ClearTelemetryVisuals()
+    {
+        LatestTelemetryChartPoints = new Points();
+        QueryTelemetryChartPoints = new Points();
+        LatestTelemetryInsights = "选择设备后显示最新遥测快照。";
+        QueryTelemetryInsights = "查询后将在这里显示聚合趋势摘要。";
+        LatestTelemetryKeySummary = "暂无数值型遥测键。";
+        QueryTelemetryKeySummary = "暂无聚合曲线。";
+    }
+
+    private TelemetryVisualization BuildVisualization(
+        IEnumerable<DataValueItem> source,
+        Func<DataValueItem, string> labelSelector,
+        string emptyMessage,
+        string seriesName)
+    {
+        var numericItems = source
+            .Select(item => new { Item = item, HasValue = item.TryGetNumericValue(out var value), Value = value })
+            .Where(entry => entry.HasValue)
+            .ToList();
+
+        if (numericItems.Count == 0)
+        {
+            return new TelemetryVisualization(new Points(), emptyMessage, "暂无可用键。");
+        }
+
+        const double padding = 10;
+        var width = TelemetryChartWidth;
+        var height = TelemetryChartHeight;
+        var min = numericItems.Min(entry => entry.Value);
+        var max = numericItems.Max(entry => entry.Value);
+        var range = Math.Abs(max - min) < 0.0001 ? 1 : max - min;
+        var xStep = numericItems.Count == 1 ? 0 : (width - (padding * 2)) / (numericItems.Count - 1);
+        var points = new Points();
+
+        for (var index = 0; index < numericItems.Count; index++)
+        {
+            var x = padding + (xStep * index);
+            var normalized = (numericItems[index].Value - min) / range;
+            var y = height - padding - (normalized * (height - (padding * 2)));
+            points.Add(new Point(x, y));
+        }
+
+        var latest = numericItems[^1].Value;
+        var average = numericItems.Average(entry => entry.Value);
+        var keySummary = string.Join(" · ", numericItems.Select(entry => labelSelector(entry.Item)).Take(4));
+        if (numericItems.Count > 4)
+        {
+            keySummary += $" · +{numericItems.Count - 4}";
+        }
+
+        var insights = $"{seriesName}：最新 {latest:0.##}，最小 {min:0.##}，最大 {max:0.##}，平均 {average:0.##}。";
+        return new TelemetryVisualization(points, insights, keySummary);
+    }
+
     private void SetCaptchaImages(Bitmap? background, Bitmap? piece)
     {
         var oldBackground = CaptchaBackgroundImage;
@@ -426,4 +580,6 @@ public partial class MainWindowViewModel : ViewModelBase
         oldBackground?.Dispose();
         oldPiece?.Dispose();
     }
+
+    private sealed record TelemetryVisualization(Points Points, string Insights, string Keys);
 }
