@@ -1,6 +1,6 @@
-# IoTSharp AtomUI Client
+# IoTSharp .NET MAUI Client
 
-一个基于 **Avalonia + AtomUI** 的 IoTSharp 桌面客户端示例，替换了仓库中原有的 MAUI 项目。
+一个基于 **.NET MAUI** 的 IoTSharp 客户端示例，用于替代依赖 **Avalonia + AtomUI** 商业授权的实现。
 
 ## 已支持功能
 
@@ -17,13 +17,16 @@
 ## 项目结构
 
 - `IoTSharp.Client.slnx`：解决方案文件
-- `IoTSharp.Client/`：Avalonia + AtomUI 桌面客户端项目
+- `IoTSharp.Client/`：.NET MAUI 客户端项目
 
 ## 本地运行
 
 ```bash
 dotnet build /home/runner/work/Client/Client/IoTSharp.Client.slnx
-dotnet run --project /home/runner/work/Client/Client/IoTSharp.Client/IoTSharp.Client.csproj
+# Android
+dotnet build -t:Run -f net9.0-android /home/runner/work/Client/Client/IoTSharp.Client/IoTSharp.Client.csproj
+# Windows
+dotnet build -t:Run -f net9.0-windows10.0.19041.0 /home/runner/work/Client/Client/IoTSharp.Client/IoTSharp.Client.csproj
 ```
 
 ## 使用说明
@@ -37,6 +40,6 @@ dotnet run --project /home/runner/work/Client/Client/IoTSharp.Client/IoTSharp.Cl
 
 ## 技术说明
 
-- UI：Avalonia + AtomUI
+- UI：.NET MAUI
 - 状态管理：CommunityToolkit.Mvvm
 - 数据访问：`HttpClient` 调用 IoTSharp REST API
