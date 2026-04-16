@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:IoTSharp.Client.Models"
+             xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
+             xmlns:viewModels="clr-namespace:IoTSharp.Client.ViewModels"
+             x:Class="IoTSharp.Client.MainPage"
+             x:DataType="viewModels:MainWindowViewModel"
+             BackgroundColor="#F3F4F6">
+    <ScrollView>
+        <VerticalStackLayout Padding="18" Spacing="18">
+            <Border BackgroundColor="#0F172A" StrokeThickness="0" Padding="24,18">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="18" />
+                </Border.StrokeShape>
+                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="10" ColumnSpacing="12">
+                    <VerticalStackLayout>
+                        <Label Text="IoTSharp .NET MAUI Client" FontSize="26" FontAttributes="Bold" TextColor="White" />
+                        <Label Text="面向 IoTSharp/IoTSharp 的 MAUI 客户端，支持登录、设备属性、最新遥测和聚合数据查询。"
+                               TextColor="#CBD5E1" />
+                    </VerticalStackLayout>
+
+                    <HorizontalStackLayout Grid.Column="1" Spacing="12" VerticalOptions="Center">
+                        <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="White" />
+                        <Label Text="{Binding CurrentSessionText}" TextColor="White" VerticalTextAlignment="Center" IsVisible="{Binding ShowWorkspace}" />
+                        <Button Text="退出登录" Command="{Binding LogoutCommand}" IsVisible="{Binding ShowWorkspace}" />
+                    </HorizontalStackLayout>
+
+                    <Border Grid.Row="1" Grid.ColumnSpan="2" BackgroundColor="#1E293B" Padding="12,10" StrokeThickness="0">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="10" />
+                        </Border.StrokeShape>
+                        <Label Text="{Binding StatusMessage}" TextColor="#E2E8F0" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Grid ColumnDefinitions="380,*" ColumnSpacing="18" IsVisible="{Binding ShowLoginPanel}">
+                <Border BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="20">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="18" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="14">
+                        <Label Text="登录 IoTSharp" FontSize="22" FontAttributes="Bold" />
+                        <Label Text="输入服务地址、账号密码，并完成 IoTSharp 拼图验证码。" TextColor="#64748B" />
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="服务地址" FontAttributes="Bold" />
+                            <Entry Text="{Binding ServerUrl}" Placeholder="http://localhost:5000" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="用户名" FontAttributes="Bold" />
+                            <Entry Text="{Binding UserName}" Placeholder="admin@example.com" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="密码" FontAttributes="Bold" />
+                            <Entry Text="{Binding Password}" Placeholder="请输入密码" IsPassword="True" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="滑块验证码" FontAttributes="Bold" />
+                            <Border BackgroundColor="#0F172A" Stroke="#CBD5E1" StrokeThickness="1" Padding="10">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="12" />
+                                </Border.StrokeShape>
+                                <AbsoluteLayout WidthRequest="{Binding CaptchaCanvasWidth}" HeightRequest="{Binding CaptchaCanvasHeight}">
+                                    <Image Source="{Binding CaptchaBackgroundImage}"
+                                           Aspect="AspectFill"
+                                           AbsoluteLayout.LayoutBounds="0,0,1,1"
+                                           AbsoluteLayout.LayoutFlags="All" />
+                                    <Image Source="{Binding CaptchaPieceImage}"
+                                           TranslationX="{Binding CaptchaMove}"
+                                           TranslationY="{Binding CaptchaYOffset}" />
+                                </AbsoluteLayout>
+                            </Border>
+                            <Slider Minimum="0" Maximum="{Binding CaptchaMaxOffset}" Value="{Binding CaptchaMove}" />
+                            <Label Text="拖动上方拼图块到缺口位置后再登录。" TextColor="#64748B" />
+                        </VerticalStackLayout>
+
+                        <Label Text="{Binding ErrorMessage}" TextColor="#DC2626" />
+
+                        <HorizontalStackLayout Spacing="12">
+                            <Button Text="刷新验证码" Command="{Binding RefreshCaptchaCommand}" />
+                            <Button Text="登录" Command="{Binding LoginCommand}" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Column="1" BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="28">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="18" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="18">
+                        <Label Text="客户端功能概览" FontSize="24" FontAttributes="Bold" />
+                        <Label Text="当前实现已改为 .NET MAUI，避免 Avalonia + AtomUI 的商业授权依赖，并继续聚焦 IoTSharp 核心运维场景。"
+                               TextColor="#475569" />
+
+                        <Border BackgroundColor="#F8FAFC" StrokeThickness="0" Padding="18">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="14" />
+                            </Border.StrokeShape>
+                            <VerticalStackLayout Spacing="10">
+                                <Label Text="已支持能力" FontSize="18" FontAttributes="Bold" />
+                                <Label Text="• 登录 IoTSharp 并处理服务端滑块验证码" />
+                                <Label Text="• 获取当前用户、客户和租户上下文" />
+                                <Label Text="• 按客户查询设备列表，并支持设备名搜索" />
+                                <Label Text="• 查看设备属性、最新遥测、聚合遥测结果" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Border BackgroundColor="#F8FAFC" StrokeThickness="0" Padding="18">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="14" />
+                            </Border.StrokeShape>
+                            <VerticalStackLayout Spacing="10">
+                                <Label Text="聚合查询示例" FontSize="18" FontAttributes="Bold" />
+                                <Label Text="输入 keys、开始结束时间、采样间隔 every，再选择 Mean/Max/Min/Sum 等聚合方式即可。"
+                                       TextColor="#475569" />
+                                <Label Text="例如：keys = temp,humidity；every = 00:05:00；aggregate = Mean" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <VerticalStackLayout IsVisible="{Binding ShowWorkspace}" Spacing="18">
+                <Grid ColumnDefinitions="360,*" ColumnSpacing="18">
+                    <Border BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="18">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="18" />
+                        </Border.StrokeShape>
+                        <VerticalStackLayout Spacing="14">
+                            <VerticalStackLayout>
+                                <Label Text="设备浏览" FontSize="22" FontAttributes="Bold" />
+                                <Label Text="支持按名称筛选，并优先展示在线设备。" TextColor="#64748B" />
+                            </VerticalStackLayout>
+
+                            <Entry Text="{Binding DeviceSearchText}" Placeholder="设备名称或 GUID" />
+
+                            <HorizontalStackLayout Spacing="8">
+                                <CheckBox IsChecked="{Binding OnlyActiveDevices}" />
+                                <Label Text="仅显示在线设备" VerticalTextAlignment="Center" />
+                            </HorizontalStackLayout>
+
+                            <Border BackgroundColor="#F8FAFC" StrokeThickness="0" Padding="10">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="10" />
+                                </Border.StrokeShape>
+                                <Label Text="{Binding DeviceInventorySummary}" TextColor="#475569" />
+                            </Border>
+
+                            <Button Text="刷新设备列表" Command="{Binding LoadDevicesCommand}" />
+
+                            <CollectionView ItemsSource="{Binding Devices}"
+                                            SelectedItem="{Binding SelectedDevice}"
+                                            SelectionMode="Single"
+                                            HeightRequest="520">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:DeviceSummary">
+                                        <Border Margin="0,0,0,10" BackgroundColor="#F8FAFC" Stroke="#E2E8F0" StrokeThickness="1" Padding="12">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="12" />
+                                            </Border.StrokeShape>
+                                            <VerticalStackLayout Spacing="6">
+                                                <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="16" />
+                                                <Label Text="{Binding Subtitle}" TextColor="#64748B" />
+                                                <HorizontalStackLayout Spacing="8">
+                                                    <Label Text="状态：" FontAttributes="Bold" />
+                                                    <Label Text="{Binding ActiveLabel}" TextColor="#2563EB" />
+                                                </HorizontalStackLayout>
+                                                <Label Text="{Binding LastActivityText}" TextColor="#94A3B8" FontSize="12" />
+                                            </VerticalStackLayout>
+                                        </Border>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <VerticalStackLayout Grid.Column="1" Spacing="18">
+                        <Border BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="18">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="18" />
+                            </Border.StrokeShape>
+                            <Grid ColumnDefinitions="2*,*,*,*" ColumnSpacing="18">
+                                <VerticalStackLayout>
+                                    <Label Text="{Binding SelectedDeviceDetail.Name}" FontSize="24" FontAttributes="Bold" />
+                                    <Label Text="{Binding SelectedDeviceDetail.IdentitySummary}" TextColor="#64748B" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1">
+                                    <Label Text="客户 / 租户" FontAttributes="Bold" />
+                                    <Label Text="{Binding SelectedDeviceDetail.CustomerName}" />
+                                    <Label Text="{Binding SelectedDeviceDetail.TenantName}" TextColor="#64748B" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="2">
+                                    <Label Text="设备状态" FontAttributes="Bold" />
+                                    <Label Text="{Binding SelectedDeviceDetail.ActivityText}" />
+                                    <Label Text="{Binding SelectedDeviceDetail.LastActivityText}" TextColor="#64748B" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="3">
+                                    <Label Text="其它信息" FontAttributes="Bold" />
+                                    <Label Text="{Binding SelectedDeviceDetail.DeviceType}" />
+                                    <Label Text="{Binding SelectedDeviceDetail.Owner}" TextColor="#64748B" />
+                                    <Label Text="{Binding SelectedDeviceDetail.Timeout, StringFormat='超时: {0}s'}" TextColor="#64748B" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </Border>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
+                            <Border BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="18">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="18" />
+                                </Border.StrokeShape>
+                                <VerticalStackLayout Spacing="12">
+                                    <Label Text="设备属性" FontSize="20" FontAttributes="Bold" />
+                                    <CollectionView ItemsSource="{Binding Attributes}" HeightRequest="260">
+                                        <CollectionView.ItemTemplate>
+                                            <DataTemplate x:DataType="models:DataValueItem">
+                                                <Grid ColumnDefinitions="2*,*,2*" Margin="0,0,0,8">
+                                                    <Label Text="{Binding KeyName}" />
+                                                    <Label Grid.Column="1" Text="{Binding DataType}" TextColor="#64748B" />
+                                                    <VerticalStackLayout Grid.Column="2" Spacing="2">
+                                                        <Label Text="{Binding Value}" />
+                                                        <Label Text="{Binding TimestampText}" TextColor="#94A3B8" FontSize="12" />
+                                                    </VerticalStackLayout>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </CollectionView.ItemTemplate>
+                                    </CollectionView>
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <Border Grid.Column="1" BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="18">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="18" />
+                                </Border.StrokeShape>
+                                <VerticalStackLayout Spacing="12">
+                                    <Label Text="最新遥测" FontSize="20" FontAttributes="Bold" />
+                                    <Border BackgroundColor="#F8FAFC" StrokeThickness="0" Padding="12">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="12" />
+                                        </Border.StrokeShape>
+                                        <VerticalStackLayout Spacing="8">
+                                            <Label Text="数值型遥测快照" FontAttributes="Bold" />
+                                            <Label Text="{Binding LatestTelemetryInsights}" TextColor="#475569" />
+                                            <Label Text="{Binding LatestTelemetryKeySummary}" TextColor="#94A3B8" FontSize="12" />
+                                            <Border BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="8">
+                                                <Border.StrokeShape>
+                                                    <RoundRectangle CornerRadius="8" />
+                                                </Border.StrokeShape>
+                                                <Grid WidthRequest="{Binding TelemetryChartWidth}" HeightRequest="{Binding TelemetryChartHeight}">
+                                                    <shapes:Polyline Points="{Binding LatestTelemetryChartPoints}"
+                                                                     Stroke="#0EA5E9"
+                                                                     StrokeThickness="2" />
+                                                </Grid>
+                                            </Border>
+                                        </VerticalStackLayout>
+                                    </Border>
+                                    <CollectionView ItemsSource="{Binding LatestTelemetry}" HeightRequest="260">
+                                        <CollectionView.ItemTemplate>
+                                            <DataTemplate x:DataType="models:DataValueItem">
+                                                <Grid ColumnDefinitions="2*,*,2*" Margin="0,0,0,8">
+                                                    <Label Text="{Binding KeyName}" />
+                                                    <Label Grid.Column="1" Text="{Binding DataType}" TextColor="#64748B" />
+                                                    <VerticalStackLayout Grid.Column="2" Spacing="2">
+                                                        <Label Text="{Binding Value}" />
+                                                        <Label Text="{Binding TimestampText}" TextColor="#94A3B8" FontSize="12" />
+                                                    </VerticalStackLayout>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </CollectionView.ItemTemplate>
+                                    </CollectionView>
+                                </VerticalStackLayout>
+                            </Border>
+                        </Grid>
+
+                        <Border BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="18">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="18" />
+                            </Border.StrokeShape>
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="聚合遥测查询" FontSize="20" FontAttributes="Bold" />
+
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                    <VerticalStackLayout Spacing="6">
+                                        <Label Text="Keys（逗号分隔）" FontAttributes="Bold" />
+                                        <Entry Text="{Binding TelemetryKeys}" Placeholder="temp,humidity" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="6">
+                                        <Label Text="Aggregate" FontAttributes="Bold" />
+                                        <Picker ItemsSource="{Binding AggregateOptions}" SelectedItem="{Binding SelectedAggregate}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Row="1" Spacing="6">
+                                        <Label Text="开始时间（ISO）" FontAttributes="Bold" />
+                                        <Entry Text="{Binding TelemetryBeginText}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6">
+                                        <Label Text="结束时间（ISO）" FontAttributes="Bold" />
+                                        <Entry Text="{Binding TelemetryEndText}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Row="2" Spacing="6">
+                                        <Label Text="Every（时间间隔）" FontAttributes="Bold" />
+                                        <Entry Text="{Binding TelemetryEveryText}" Placeholder="00:05:00" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Row="2" Grid.Column="1" VerticalOptions="End">
+                                        <Button Text="查询遥测 / 聚合数据" Command="{Binding QueryTelemetryCommand}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+
+                                <Border BackgroundColor="#F8FAFC" StrokeThickness="0" Padding="10">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="12" />
+                                    </Border.StrokeShape>
+                                    <VerticalStackLayout Spacing="8">
+                                        <Label Text="{Binding TelemetrySummary}" TextColor="#475569" />
+                                        <HorizontalStackLayout Spacing="8">
+                                            <Button Text="最近 1 小时" Command="{Binding ApplyTimeRangeCommand}" CommandParameter="1h" />
+                                            <Button Text="最近 24 小时" Command="{Binding ApplyTimeRangeCommand}" CommandParameter="24h" />
+                                            <Button Text="最近 7 天" Command="{Binding ApplyTimeRangeCommand}" CommandParameter="7d" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
+                                </Border>
+
+                                <Border BackgroundColor="#F8FAFC" StrokeThickness="0" Padding="12">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="12" />
+                                    </Border.StrokeShape>
+                                    <VerticalStackLayout Spacing="8">
+                                        <Label Text="聚合趋势预览" FontAttributes="Bold" />
+                                        <Label Text="{Binding QueryTelemetryInsights}" TextColor="#475569" />
+                                        <Label Text="{Binding QueryTelemetryKeySummary}" TextColor="#94A3B8" FontSize="12" />
+                                        <Border BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="8">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="8" />
+                                            </Border.StrokeShape>
+                                            <Grid WidthRequest="{Binding TelemetryChartWidth}" HeightRequest="{Binding TelemetryChartHeight}">
+                                                <shapes:Polyline Points="{Binding QueryTelemetryChartPoints}"
+                                                                 Stroke="#2563EB"
+                                                                 StrokeThickness="2" />
+                                            </Grid>
+                                        </Border>
+                                    </VerticalStackLayout>
+                                </Border>
+
+                                <CollectionView ItemsSource="{Binding QueryTelemetryResults}" HeightRequest="260">
+                                    <CollectionView.ItemTemplate>
+                                        <DataTemplate x:DataType="models:DataValueItem">
+                                            <Grid ColumnDefinitions="2*,*,2*" Margin="0,0,0,8">
+                                                <Label Text="{Binding KeyName}" />
+                                                <Label Grid.Column="1" Text="{Binding DataType}" TextColor="#64748B" />
+                                                <VerticalStackLayout Grid.Column="2" Spacing="2">
+                                                    <Label Text="{Binding Value}" />
+                                                    <Label Text="{Binding TimestampText}" TextColor="#94A3B8" FontSize="12" />
+                                                </VerticalStackLayout>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </CollectionView.ItemTemplate>
+                                </CollectionView>
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+                </Grid>
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

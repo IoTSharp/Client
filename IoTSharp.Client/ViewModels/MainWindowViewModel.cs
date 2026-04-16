@@ -1,12 +1,10 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
-using Avalonia;
-using Avalonia.Media.Imaging;
-using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using IoTSharp.Client.Models;
 using IoTSharp.Client.Services;
+using Microsoft.Maui.Controls;
 
 namespace IoTSharp.Client.ViewModels;
 
@@ -64,10 +62,10 @@ public partial class MainWindowViewModel : ViewModelBase
     private string currentCustomerDisplayName = string.Empty;
 
     [ObservableProperty]
-    private Bitmap? captchaBackgroundImage;
+    private ImageSource? captchaBackgroundImage;
 
     [ObservableProperty]
-    private Bitmap? captchaPieceImage;
+    private ImageSource? captchaPieceImage;
 
     [ObservableProperty]
     private string captchaClientId = string.Empty;
@@ -133,25 +131,16 @@ public partial class MainWindowViewModel : ViewModelBase
     private string queryTelemetryKeySummary = "暂无聚合曲线。";
 
     [ObservableProperty]
-    private Points latestTelemetryChartPoints = new();
+    private string latestTelemetryChartPoints = string.Empty;
 
     [ObservableProperty]
-    private Points queryTelemetryChartPoints = new();
+    private string queryTelemetryChartPoints = string.Empty;
 
     public double TelemetryChartWidth => 360;
 
     public double TelemetryChartHeight => 130;
 
-    public MainWindowViewModel() : this(new IoTSharpApiClient(), false)
-    {
-    }
-
     public MainWindowViewModel(IoTSharpApiClient apiClient)
-        : this(apiClient, true)
-    {
-    }
-
-    private MainWindowViewModel(IoTSharpApiClient apiClient, bool loadCaptcha)
     {
         _apiClient = apiClient;
         RefreshCaptchaCommand = new AsyncRelayCommand(RefreshCaptchaAsync, CanPrepareLogin);
@@ -160,10 +149,7 @@ public partial class MainWindowViewModel : ViewModelBase
         QueryTelemetryCommand = new AsyncRelayCommand(QueryTelemetryAsync, CanQueryTelemetry);
         LogoutCommand = new RelayCommand(Logout);
         ApplyTimeRangeCommand = new RelayCommand<string>(ApplyTimeRange);
-        if (loadCaptcha)
-        {
-            _ = RefreshCaptchaAsync();
-        }
+        _ = RefreshCaptchaAsync();
     }
 
     public bool ShowLoginPanel => !IsAuthenticated;
@@ -246,22 +232,18 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             ClearError();
             var captcha = await _apiClient.CreateCaptchaAsync(ServerUrl);
+            var background = Base64BitmapFactory.Create(captcha.BackgroundBase64);
+            var piece = Base64BitmapFactory.Create(captcha.PieceBase64);
+
             CaptchaClientId = captcha.ClientId;
             CaptchaYOffset = captcha.OffsetY;
             CaptchaMove = 0;
-
-            SetCaptchaImages(Base64BitmapFactory.Create(captcha.BackgroundBase64), Base64BitmapFactory.Create(captcha.PieceBase64));
-
-            if (CaptchaBackgroundImage is not null)
-            {
-                CaptchaCanvasWidth = CaptchaBackgroundImage.PixelSize.Width;
-                CaptchaCanvasHeight = CaptchaBackgroundImage.PixelSize.Height;
-            }
-
-            CaptchaMaxOffset = CaptchaBackgroundImage is not null && CaptchaPieceImage is not null
-                ? Math.Max(0, CaptchaBackgroundImage.PixelSize.Width - CaptchaPieceImage.PixelSize.Width)
+            SetCaptchaImages(background?.ImageSource, piece?.ImageSource);
+            CaptchaCanvasWidth = background?.Width > 0 ? background.Width : 320;
+            CaptchaCanvasHeight = background?.Height > 0 ? background.Height : 180;
+            CaptchaMaxOffset = background is not null && piece is not null && background.Width > 0 && piece.Width > 0
+                ? Math.Max(0, background.Width - piece.Width)
                 : 240;
-
             StatusMessage = "验证码已更新，请拖动拼图后登录。";
         });
     }
@@ -330,7 +312,7 @@ public partial class MainWindowViewModel : ViewModelBase
             ReplaceCollection(QueryTelemetryResults, Array.Empty<DataValueItem>());
             QueryTelemetryInsights = "重新选择设备后，请再次执行聚合查询。";
             QueryTelemetryKeySummary = "暂无聚合曲线。";
-            QueryTelemetryChartPoints = new Points();
+            QueryTelemetryChartPoints = string.Empty;
 
             if (string.IsNullOrWhiteSpace(TelemetryKeys))
             {
@@ -426,10 +408,17 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             var captcha = await _apiClient.CreateCaptchaAsync(ServerUrl);
+            var background = Base64BitmapFactory.Create(captcha.BackgroundBase64);
+            var piece = Base64BitmapFactory.Create(captcha.PieceBase64);
             CaptchaClientId = captcha.ClientId;
             CaptchaYOffset = captcha.OffsetY;
             CaptchaMove = 0;
-            SetCaptchaImages(Base64BitmapFactory.Create(captcha.BackgroundBase64), Base64BitmapFactory.Create(captcha.PieceBase64));
+            SetCaptchaImages(background?.ImageSource, piece?.ImageSource);
+            CaptchaCanvasWidth = background?.Width > 0 ? background.Width : 320;
+            CaptchaCanvasHeight = background?.Height > 0 ? background.Height : 180;
+            CaptchaMaxOffset = background is not null && piece is not null && background.Width > 0 && piece.Width > 0
+                ? Math.Max(0, background.Width - piece.Width)
+                : 240;
         }
         catch
         {
@@ -518,8 +507,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void ClearTelemetryVisuals()
     {
-        LatestTelemetryChartPoints = new Points();
-        QueryTelemetryChartPoints = new Points();
+        LatestTelemetryChartPoints = string.Empty;
+        QueryTelemetryChartPoints = string.Empty;
         LatestTelemetryInsights = "选择设备后显示最新遥测快照。";
         QueryTelemetryInsights = "查询后将在这里显示聚合趋势摘要。";
         LatestTelemetryKeySummary = "暂无数值型遥测键。";
@@ -539,7 +528,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (numericItems.Count == 0)
         {
-            return new TelemetryVisualization(new Points(), emptyMessage, "暂无可用键。");
+            return new TelemetryVisualization(string.Empty, emptyMessage, "暂无可用键。");
         }
 
         const double padding = 10;
@@ -549,14 +538,14 @@ public partial class MainWindowViewModel : ViewModelBase
         var max = numericItems.Max(entry => entry.Value);
         var range = Math.Abs(max - min) < 0.0001 ? 1 : max - min;
         var xStep = numericItems.Count == 1 ? 0 : (width - (padding * 2)) / (numericItems.Count - 1);
-        var points = new Points();
+        var pointTokens = new List<string>(numericItems.Count);
 
         for (var index = 0; index < numericItems.Count; index++)
         {
             var x = padding + (xStep * index);
             var normalized = (numericItems[index].Value - min) / range;
             var y = height - padding - (normalized * (height - (padding * 2)));
-            points.Add(new Point(x, y));
+            pointTokens.Add($"{x.ToString("0.##", CultureInfo.InvariantCulture)},{y.ToString("0.##", CultureInfo.InvariantCulture)}");
         }
 
         var latest = numericItems[^1].Value;
@@ -568,18 +557,14 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         var insights = $"{seriesName}：最新 {latest:0.##}，最小 {min:0.##}，最大 {max:0.##}，平均 {average:0.##}。";
-        return new TelemetryVisualization(points, insights, keySummary);
+        return new TelemetryVisualization(string.Join(' ', pointTokens), insights, keySummary);
     }
 
-    private void SetCaptchaImages(Bitmap? background, Bitmap? piece)
+    private void SetCaptchaImages(ImageSource? background, ImageSource? piece)
     {
-        var oldBackground = CaptchaBackgroundImage;
-        var oldPiece = CaptchaPieceImage;
         CaptchaBackgroundImage = background;
         CaptchaPieceImage = piece;
-        oldBackground?.Dispose();
-        oldPiece?.Dispose();
     }
 
-    private sealed record TelemetryVisualization(Points Points, string Insights, string Keys);
+    private sealed record TelemetryVisualization(string Points, string Insights, string Keys);
 }
