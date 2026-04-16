@@ -4,6 +4,16 @@ namespace IoTSharp.Client.Services;
 
 internal static class Base64BitmapFactory
 {
+    private const byte PngSignature0 = 0x89;
+    private const byte PngSignature1 = 0x50;
+    private const byte PngSignature2 = 0x4E;
+    private const byte PngSignature3 = 0x47;
+    private const byte GifSignature0 = 0x47;
+    private const byte GifSignature1 = 0x49;
+    private const byte GifSignature2 = 0x46;
+    private const byte JpegSignature0 = 0xFF;
+    private const byte JpegSignature1 = 0xD8;
+
     public static Base64Image? Create(string? base64)
     {
         if (string.IsNullOrWhiteSpace(base64))
@@ -18,17 +28,17 @@ internal static class Base64BitmapFactory
 
     private static (int Width, int Height) ReadImageSize(byte[] bytes)
     {
-        if (bytes.Length >= 24 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47)
+        if (bytes.Length >= 24 && bytes[0] == PngSignature0 && bytes[1] == PngSignature1 && bytes[2] == PngSignature2 && bytes[3] == PngSignature3)
         {
             return (ReadBigEndianInt32(bytes, 16), ReadBigEndianInt32(bytes, 20));
         }
 
-        if (bytes.Length >= 10 && bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46)
+        if (bytes.Length >= 10 && bytes[0] == GifSignature0 && bytes[1] == GifSignature1 && bytes[2] == GifSignature2)
         {
             return (bytes[6] | (bytes[7] << 8), bytes[8] | (bytes[9] << 8));
         }
 
-        if (bytes.Length >= 4 && bytes[0] == 0xFF && bytes[1] == 0xD8)
+        if (bytes.Length >= 4 && bytes[0] == JpegSignature0 && bytes[1] == JpegSignature1)
         {
             return ReadJpegSize(bytes);
         }
