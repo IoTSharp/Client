@@ -47,12 +47,19 @@ internal static class Base64BitmapFactory
     }
 
     private static int ReadBigEndianInt32(byte[] bytes, int start)
-        => (bytes[start] << 24) | (bytes[start + 1] << 16) | (bytes[start + 2] << 8) | bytes[start + 3];
+    {
+        if (start < 0 || start + 3 >= bytes.Length)
+        {
+            return 0;
+        }
+
+        return (bytes[start] << 24) | (bytes[start + 1] << 16) | (bytes[start + 2] << 8) | bytes[start + 3];
+    }
 
     private static (int Width, int Height) ReadJpegSize(byte[] bytes)
     {
         var index = 2;
-        while (index + 8 < bytes.Length)
+        while (index + 7 < bytes.Length)
         {
             while (index < bytes.Length && bytes[index] != 0xFF)
             {
@@ -88,6 +95,11 @@ internal static class Base64BitmapFactory
 
             if (IsStartOfFrameMarker(marker))
             {
+                if (index + 6 >= bytes.Length)
+                {
+                    break;
+                }
+
                 var height = (bytes[index + 3] << 8) | bytes[index + 4];
                 var width = (bytes[index + 5] << 8) | bytes[index + 6];
                 return (width, height);
